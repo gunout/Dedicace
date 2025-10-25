@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Art ASCII Matrice - Affichage Cybernétique</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Effet de scanlines */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                transparent 50%,
+                rgba(0, 255, 0, 0.03) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Effet de chute de code matrice */
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.3;
+        }
+
+        .terminal-header {
+            width: 100%;
+            background: #001100;
+            padding: 10px 20px;
+            border-bottom: 2px solid #00ff00;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            z-index: 10;
+        }
+
+        .terminal-title {
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 15px;
+        }
+
+        .status {
+            font-size: 12px;
+            padding: 2px 8px;
+            background: #003300;
+            border: 1px solid #00ff00;
+            border-radius: 3px;
+        }
+
+        .orbit-container {
+            position: relative;
+            width: 90vmin;
+            height: 90vmin;
+            max-width: 800px;
+            max-height: 800px;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .rotating-content {
+            position: absolute;
+            transform-origin: center;
+            background: rgba(0, 20, 0, 0.9);
+            border: 1px solid #00ff00;
+            border-radius: 8px;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 0, 0.5),
+                inset 0 0 20px rgba(0, 255, 0, 0.1);
+            padding: 15px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pixel-art-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .pixel-art {
+            max-width: 100%;
+            max-height: 100%;
+            filter: brightness(1.2) contrast(1.1);
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        /* Style pour l'effet matrice sur l'image */
+        .matrix-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .matrix-char {
+            position: absolute;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+            animation: matrix-fall linear infinite;
+            opacity: 0;
+        }
+
+        @keyframes matrix-fall {
+            0% {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            5% {
+                opacity: 1;
+            }
+            95% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(1000%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes orbit-rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 20, 0, 0.9);
+            border: 1px solid #00ff00;
+            border-radius: 8px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            z-index: 50;
+        }
+
+        .control-btn {
+            background: #002200;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .control-btn:hover {
+            background: #00ff00;
+            color: #001100;
+            box-shadow: 0 0 15px #00ff00;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(0, 255, 0, 0.8);
+            }
+        }
+
+        .debug-info {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            background: rgba(0, 20, 0, 0.8);
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+            padding: 10px;
+            font-size: 10px;
+            color: #00ff00;
+            z-index: 5;
+        }
+
+        /* Lecteur musical */
+        .music-player {
+            position: fixed;
+            top: 60px;
+            left: 20px;
+            background: rgba(0, 20, 0, 0.9);
+            border: 1px solid #00ff00;
+            border-radius: 8px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            z-index: 5;
+            min-width: 250px;
+        }
+
+        .music-title {
+            font-size: 12px;
+            margin-bottom: 10px;
+            text-align: center;
+            text-shadow: 0 0 5px #00ff00;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .music-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .music-btn {
+            background: #002200;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .music-btn:hover {
+            background: #00ff00;
+            color: #001100;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .music-btn.active {
+            background: #00ff00;
+            color: #001100;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #003300;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+
+        .progress {
+            height: 100%;
+            background: #00ff00;
+            width: 0%;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 5px #00ff00;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            margin-bottom: 10px;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 4px;
+            background: #003300;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #00ff00;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 5px #00ff00;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: #00ff00;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 5px #00ff00;
+            border: none;
+        }
+
+        .visualizer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 20px;
+            margin-top: 10px;
+            gap: 2px;
+        }
+
+        .bar {
+            flex: 1;
+            background: #00ff00;
+            min-height: 2px;
+            animation: dance 0.5s ease-in-out infinite alternate;
+            box-shadow: 0 0 3px #00ff00;
+        }
+
+        @keyframes dance {
+            0% { height: 2px; }
+            100% { height: 20px; }
+        }
+
+        .bar:nth-child(2) { animation-delay: 0.1s; }
+        .bar:nth-child(3) { animation-delay: 0.2s; }
+        .bar:nth-child(4) { animation-delay: 0.3s; }
+        .bar:nth-child(5) { animation-delay: 0.4s; }
+        .bar:nth-child(6) { animation-delay: 0.3s; }
+        .bar:nth-child(7) { animation-delay: 0.2s; }
+        .bar:nth-child(8) { animation-delay: 0.1s; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .orbit-container {
+                width: 95vmin;
+                height: 95vmin;
+            }
+            
+            .control-panel {
+                flex-wrap: wrap;
+                justify-content: center;
+                max-width: 90%;
+            }
+
+            .music-player {
+                left: 10px;
+                right: 10px;
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-rain" id="matrixRain"></div>
+    
+    <div class="terminal-header">
+        <div class="terminal-title">SYSTEME D'AFFICHAGE CYBERNETIQUE // EFFET MATRICE</div>
+        <div class="status-indicators">
+            <div class="status">MATRICE: ACTIVE</div>
+            <div class="status">SYNC: STABLE</div>
+            <div class="status">PWR: 100%</div>
+        </div>
+    </div>
+
+    <!-- Lecteur musical -->
+    <div class="music-player">
+        <div class="music-title">♪ Je me nois dans tes yeux ♪</div>
+        <div class="music-controls">
+            <button class="music-btn" id="musicPrev">⏮</button>
+            <button class="music-btn" id="musicPlayPause">▶</button>
+            <button class="music-btn" id="musicNext">⏭</button>
+        </div>
+        <div class="progress-bar" id="progressBar">
+            <div class="progress" id="progress"></div>
+        </div>
+        <div class="time-display">
+            <span id="currentTime">0:00</span>
+            <span id="duration">0:00</span>
+        </div>
+        <div class="volume-control">
+            <span style="font-size: 10px;">🔊</span>
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50">
+            <span id="volumeValue" style="font-size: 10px;">50%</span>
+        </div>
+        <div class="visualizer" id="visualizer">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+    </div>
+
+    <div class="debug-info" id="debugInfo">
+        VITESSE: 20s<br>
+        DIRECTION: NORMAL<br>
+        STATUT: ACTIF
+    </div>
+
+    <div class="orbit-container" id="orbitContainer">
+        <div class="rotating-content pulse">
+            <div class="pixel-art-container">
+                <img src="https://z-cdn-media.chatglm.cn/files/665a332f-58ca-4631-868e-bf62aee5538b_gouzous.png?auth_key=1792927762-8d32006ef05f403a9ff3cc7cdd9bef40-0-4006e3d90c9a452a0c3705bcf1871380" alt="Pixel Art" class="pixel-art" id="pixelArt">
+                <div class="matrix-overlay" id="matrixOverlay"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <button class="control-btn" id="speedUp">ACCÉLÉRER ++</button>
+        <button class="control-btn" id="slowDown">RALENTIR --</button>
+        <button class="control-btn" id="reverse">INVERSER ↻</button>
+        <button class="control-btn" id="togglePlayPause">PAUSE ▐▐</button>
+        <button class="control-btn" id="reset">RÉINITIALISER ↺</button>
+        <button class="control-btn" id="toggleMatrix">MATRICE ON/OFF</button>
+    </div>
+
+    <!-- Élément audio caché -->
+    <audio id="audioPlayer" preload="auto">
+        <!-- Remplacez cette URL par le lien vers votre fichier musique -->
+        <source src="" type="audio/mpeg">
+        <!-- Alternative: utilisez un fichier local -->
+        <!-- <source src="music/je-me-noie-dans-tes-yeux.mp3" type="audio/mpeg"> -->
+    </audio>
+
+    <script>
+        const orbitContainer = document.getElementById('orbitContainer');
+        const speedUpBtn = document.getElementById('speedUp');
+        const slowDownBtn = document.getElementById('slowDown');
+        const reverseBtn = document.getElementById('reverse');
+        const togglePlayPauseBtn = document.getElementById('togglePlayPause');
+        const resetBtn = document.getElementById('reset');
+        const toggleMatrixBtn = document.getElementById('toggleMatrix');
+        const debugInfo = document.getElementById('debugInfo');
+        const rotatingContent = document.querySelector('.rotating-content');
+        const pixelArt = document.getElementById('pixelArt');
+        const matrixOverlay = document.getElementById('matrixOverlay');
+        const matrixRain = document.getElementById('matrixRain');
+
+        // Éléments du lecteur musical
+        const audioPlayer = document.getElementById('audioPlayer');
+        const musicPlayPauseBtn = document.getElementById('musicPlayPause');
+        const musicPrevBtn = document.getElementById('musicPrev');
+        const musicNextBtn = document.getElementById('musicNext');
+        const progressBar = document.getElementById('progressBar');
+        const progress = document.getElementById('progress');
+        const currentTimeSpan = document.getElementById('currentTime');
+        const durationSpan = document.getElementById('duration');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+        const visualizer = document.getElementById('visualizer');
+
+        let animationSpeed = 20;
+        let isReversed = false;
+        let isPaused = false;
+        let matrixEnabled = true;
+        let isMusicPlaying = false;
+
+        // Playlist (vous pouvez ajouter d'autres chansons)
+        const playlist = [
+            {
+                title: "Je me noie dans tes yeux",
+                // Remplacez par l'URL réelle de la chanson
+                url: "https://www.youtube.com/watch?v=Q8r64esXRRo&list=RDQ8r64esXRRo&start_radio=1"
+            }
+        ];
+        let currentTrackIndex = 0;
+
+        // Caractères pour l'effet matrice
+        const matrixChars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+
+        // Fonction pour créer l'effet matrice sur l'image
+        function createMatrixEffect() {
+            matrixOverlay.innerHTML = '';
+            
+            if (!matrixEnabled) return;
+            
+            const containerWidth = pixelArt.offsetWidth;
+            const containerHeight = pixelArt.offsetHeight;
+            const charCount = Math.floor((containerWidth * containerHeight) / 500);
+            
+            for (let i = 0; i < charCount; i++) {
+                const char = document.createElement('div');
+                char.className = 'matrix-char';
+                char.textContent = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                
+                const left = Math.random() * containerWidth;
+                const top = Math.random() * containerHeight;
+                
+                char.style.left = `${left}px`;
+                char.style.top = `${top}px`;
+                char.style.animationDuration = `${0.5 + Math.random() * 2}s`;
+                char.style.animationDelay = `${Math.random() * 5}s`;
+                
+                matrixOverlay.appendChild(char);
+            }
+        }
+
+        // Fonction pour créer l'effet de pluie de code en arrière-plan
+        function createMatrixRain() {
+            const characters = matrixChars;
+            const columns = Math.floor(window.innerWidth / 20);
+            
+            for (let i = 0; i < columns; i++) {
+                const column = document.createElement('div');
+                column.style.position = 'absolute';
+                column.style.top = '-100px';
+                column.style.left = (i * 20) + 'px';
+                column.style.width = '20px';
+                column.style.fontFamily = 'Courier New, monospace';
+                column.style.fontSize = '18px';
+                column.style.color = '#00ff00';
+                column.style.textShadow = '0 0 5px #00ff00';
+                column.style.animation = `matrix-fall ${3 + Math.random() * 5}s linear infinite`;
+                column.style.animationDelay = `${Math.random() * 5}s`;
+                column.style.opacity = '0.7';
+                
+                let content = '';
+                const length = 20 + Math.floor(Math.random() * 30);
+                for (let j = 0; j < length; j++) {
+                    content += characters[Math.floor(Math.random() * characters.length)] + '<br>';
+                }
+                
+                column.innerHTML = content;
+                matrixRain.appendChild(column);
+            }
+        }
+
+        function updateAnimation() {
+            orbitContainer.style.animation = 'none';
+            void orbitContainer.offsetWidth;
+            
+            orbitContainer.style.animation = `orbit-rotation ${animationSpeed}s ${isReversed ? 'reverse' : 'normal'} linear ${isPaused ? 'paused' : 'running'}`;
+            
+            updateDebugInfo();
+        }
+
+        function updateDebugInfo() {
+            debugInfo.innerHTML = `
+                VITESSE: ${animationSpeed}s<br>
+                DIRECTION: ${isReversed ? 'INVERSE' : 'NORMAL'}<br>
+                STATUT: ${isPaused ? 'PAUSE' : 'ACTIF'}<br>
+                MATRICE: ${matrixEnabled ? 'ACTIVE' : 'INACTIVE'}<br>
+                MUSIQUE: ${isMusicPlaying ? '▶ LECTURE' : '⏸ PAUSE'}
+            `;
+        }
+
+        function updatePulseEffect() {
+            if (isPaused) {
+                rotatingContent.classList.remove('pulse');
+            } else {
+                rotatingContent.classList.add('pulse');
+            }
+        }
+
+        function toggleMatrixEffect() {
+            matrixEnabled = !matrixEnabled;
+            if (matrixEnabled) {
+                createMatrixEffect();
+                matrixRain.style.display = 'block';
+            } else {
+                matrixOverlay.innerHTML = '';
+                matrixRain.style.display = 'none';
+            }
+            toggleMatrixBtn.textContent = matrixEnabled ? 'MATRICE OFF' : 'MATRICE ON';
+            updateDebugInfo();
+        }
+
+        // Fonctions du lecteur musical
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function toggleMusicPlayPause() {
+            if (isMusicPlaying) {
+                audioPlayer.pause();
+                musicPlayPauseBtn.textContent = '▶';
+                musicPlayPauseBtn.classList.remove('active');
+                visualizer.style.display = 'none';
+            } else {
+                audioPlayer.play();
+                musicPlayPauseBtn.textContent = '⏸';
+                musicPlayPauseBtn.classList.add('active');
+                visualizer.style.display = 'flex';
+            }
+            isMusicPlaying = !isMusicPlaying;
+            updateDebugInfo();
+        }
+
+        function loadTrack(index) {
+            if (index >= 0 && index < playlist.length) {
+                currentTrackIndex = index;
+                audioPlayer.src = playlist[index].url;
+                document.querySelector('.music-title').textContent = `♪ ${playlist[index].title} ♪`;
+                if (isMusicPlaying) {
+                    audioPlayer.play();
+                }
+            }
+        }
+
+        // Événements du lecteur musical
+        musicPlayPauseBtn.addEventListener('click', toggleMusicPlayPause);
+
+        musicPrevBtn.addEventListener('click', () => {
+            if (currentTrackIndex > 0) {
+                loadTrack(currentTrackIndex - 1);
+            }
+        });
+
+        musicNextBtn.addEventListener('click', () => {
+            if (currentTrackIndex < playlist.length - 1) {
+                loadTrack(currentTrackIndex + 1);
+            }
+        });
+
+        audioPlayer.addEventListener('loadedmetadata', () => {
+            durationSpan.textContent = formatTime(audioPlayer.duration);
+        });
+
+        audioPlayer.addEventListener('timeupdate', () => {
+            const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+            progress.style.width = `${progressPercent}%`;
+            currentTimeSpan.textContent = formatTime(audioPlayer.currentTime);
+        });
+
+        progressBar.addEventListener('click', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            audioPlayer.currentTime = percent * audioPlayer.duration;
+        });
+
+        volumeSlider.addEventListener('input', (e) => {
+            const volume = e.target.value;
+            audioPlayer.volume = volume / 100;
+            volumeValue.textContent = `${volume}%`;
+        });
+
+        audioPlayer.addEventListener('ended', () => {
+            if (currentTrackIndex < playlist.length - 1) {
+                loadTrack(currentTrackIndex + 1);
+            } else {
+                isMusicPlaying = false;
+                musicPlayPauseBtn.textContent = '▶';
+                musicPlayPauseBtn.classList.remove('active');
+                visualizer.style.display = 'none';
+                updateDebugInfo();
+            }
+        });
+
+        // Événements des contrôles principaux
+        speedUpBtn.addEventListener('click', () => {
+            if (animationSpeed > 3) {
+                animationSpeed -= 2;
+                updateAnimation();
+            }
+        });
+
+        slowDownBtn.addEventListener('click', () => {
+            animationSpeed += 2;
+            updateAnimation();
+        });
+
+        reverseBtn.addEventListener('click', () => {
+            isReversed = !isReversed;
+            updateAnimation();
+        });
+
+        togglePlayPauseBtn.addEventListener('click', () => {
+            isPaused = !isPaused;
+            togglePlayPauseBtn.textContent = isPaused ? 'PLAY ►' : 'PAUSE ▐▐';
+            updateAnimation();
+            updatePulseEffect();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            animationSpeed = 20;
+            isReversed = false;
+            isPaused = false;
+            togglePlayPauseBtn.textContent = 'PAUSE ▐▐';
+            updateAnimation();
+            updatePulseEffect();
+        });
+
+        toggleMatrixBtn.addEventListener('click', toggleMatrixEffect);
+
+        // Initialisation
+        createMatrixEffect();
+        createMatrixRain();
+        updateAnimation();
+        updatePulseEffect();
+        
+        // Initialiser le lecteur musical
+        audioPlayer.volume = 0.5;
+        visualizer.style.display = 'none';
+
+        // Redimensionnement de la matrice quand la fenêtre change
+        window.addEventListener('resize', () => {
+            matrixRain.innerHTML = '';
+            createMatrixRain();
+            createMatrixEffect();
+        });
+
+        // Effet de terminal - message système
+        setTimeout(() => {
+            console.log('%cSYSTEME MATRICE - CHARGEEMENT TERMINE', 'color: #00ff00; font-family: monospace; font-size: 14px;');
+            console.log('%c🎵 Lecteur musical initialisé - "Je me nois dans tes yeux" 🎵', 'color: #00ff00; font-family: monospace; font-size: 12px;');
+        }, 1000);
+
+        // Instructions pour l'utilisateur
+        console.log('%cINSTRUCTIONS MUSIQUE:', 'color: #00ff00; font-family: monospace; font-size: 14px; font-weight: bold;');
+        console.log('%cPour utiliser votre propre fichier "je me nois dans tes yeux":', 'color: #00ff00; font-family: monospace; font-size: 12px;');
+        console.log('%c1. Placez le fichier MP3 dans un dossier "music"', 'color: #00ff00; font-family: monospace; font-size: 12px;');
+        console.log('%c2. Modifiez la ligne src dans l\'élément audio:', 'color: #00ff00; font-family: monospace; font-size: 12px;');
+        console.log('%c   <source src="music/je-me-nois-dans-tes-yeux.mp3" type="audio/mpeg">', 'color: #00ff00; font-family: monospace; font-size: 12px;');
+    </script>
+</body>
+</html>
